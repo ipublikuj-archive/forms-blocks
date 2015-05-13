@@ -32,11 +32,6 @@ class Container extends Nette\Forms\Container
 	public $forceDefault;
 
 	/**
-	 * @var string
-	 */
-	public $containerClass = 'IPub\FormsBlocks\BlockContainer';
-
-	/**
 	 * @var callable[]
 	 */
 	protected $blocks;
@@ -64,7 +59,7 @@ class Container extends Nette\Forms\Container
 	/**
 	 * @var string
 	 */
-	private $factoryBlockType;
+	private $selectedBlock;
 
 	/**
 	 * @param bool $forceDefault
@@ -81,13 +76,17 @@ class Container extends Nette\Forms\Container
 	/**
 	 * @param string $name
 	 * @param callable $factory
+	 * @param string $containerClass
 	 *
 	 * @return $this
 	 */
-	public function addBlock($name, $factory)
+	public function addBlock($name, $factory, $containerClass = 'IPub\FormsBlocks\BlockContainer')
 	{
 		try {
-			$this->blocks[$name] = Utils\Callback::closure($factory);
+			$this->blocks[$name] = [
+				'factory' => Utils\Callback::closure($factory),
+				'containerClass' => $containerClass
+			];
 
 		} catch (Nette\InvalidArgumentException $e) {
 			$type = is_object($factory) ? 'instanceof ' . get_class($factory) : gettype($factory);
@@ -149,7 +148,7 @@ class Container extends Nette\Forms\Container
 		if ($name == 'blocks') {
 			if (!isset($this->components[$name])) {
 				$this->addSelect($name, 'blocks')
-					->setItems(array_reduce(array_keys($this->blocks), function ($result, $row) {
+					->setItems(array_reduce((is_array($this->blocks) ? array_keys($this->blocks) : []), function ($result, $row) {
 						$result[$row] = $row;
 
 						return $result;
@@ -161,8 +160,8 @@ class Container extends Nette\Forms\Container
 		// Add block container
 		} else {
 			// Check if factory was set
-			if (isset($this->blocks[$this->factoryBlockType]) && is_callable($this->blocks[$this->factoryBlockType])) {
-				$container = $this->createContainer($name);
+			if (isset($this->blocks[$this->selectedBlock]) && is_callable($this->blocks[$this->selectedBlock]['factory'])) {
+				$container = $this->createContainer($name, $this->blocks[$this->selectedBlock]['containerClass']);
 				$container->currentGroup = $this->currentGroup;
 
 				$this->addComponent($container, $name, $this->getFirstControlName());
@@ -173,10 +172,13 @@ class Container extends Nette\Forms\Container
 				}
 
 				// Set info about block type
-				$container->addHidden('blockType', $this->factoryBlockType)
-					->setValue($this->factoryBlockType);
+				$container->addHidden('blockType', $this->selectedBlock)
+					->setValue($this->selectedBlock);
 
-				Utils\Callback::invoke($this->blocks[$this->factoryBlockType], $container);
+				Utils\Callback::invoke($this->blocks[$this->selectedBlock]['factory'], $container);
+
+				// Clear selected flag after using
+				$this->selectedBlock = NULL;
 
 				return $this->created[$container->name] = $container;
 			}
@@ -199,14 +201,13 @@ class Container extends Nette\Forms\Container
 
 	/**
 	 * @param string $name
+	 * @param string $containerClass
 	 *
 	 * @return Forms\Container
 	 */
-	protected function createContainer($name)
+	protected function createContainer($name, $containerClass = 'IPub\FormsBlocks\BlockContainer')
 	{
-		$class = $this->containerClass;
-
-		return new $class();
+		return new $containerClass();
 	}
 
 	/**
@@ -263,7 +264,7 @@ class Container extends Nette\Forms\Container
 		if (!$this->form->isAnchored() || !$this->form->isSubmitted()) {
 			foreach ($values as $name => $value) {
 				if ((is_array($value) || $value instanceof \Traversable) && !$this->getComponent($name, FALSE) && isset($value['blockType'])) {
-					$this->factoryBlockType = $value['blockType'];
+					$this->selectedBlock = $value['blockType'];
 
 					$this->createOne($name);
 				}
@@ -286,7 +287,7 @@ class Container extends Nette\Forms\Container
 
 		foreach ((array) $this->getHttpData() as $name => $value) {
 			if ((is_array($value) || $value instanceof \Traversable) && !$this->getComponent($name, FALSE) && isset($value['blockType'])) {
-				$this->factoryBlockType = $value['blockType'];
+				$this->selectedBlock = $value['blockType'];
 
 				$this->createOne($name);
 			}
@@ -556,7 +557,7 @@ class Container extends Nette\Forms\Container
 				}
 
 				if ($allowEmpty === TRUE || $blocks->isAllFilled() === TRUE) {
-					$blocks->factoryBlockType = $type;
+					$blocks->selectedBlock = $type;
 
 					$newContainer = $blocks->createOne();
 
