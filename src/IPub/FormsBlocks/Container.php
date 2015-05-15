@@ -27,11 +27,6 @@ use Nette\Utils;
 class Container extends Nette\Forms\Container
 {
 	/**
-	 * @var bool
-	 */
-	public $forceDefault;
-
-	/**
 	 * @var callable[]
 	 */
 	protected $blocks;
@@ -62,41 +57,18 @@ class Container extends Nette\Forms\Container
 	private $selectedBlock;
 
 	/**
-	 * @param bool $forceDefault
+	 * @var int
 	 */
-	public function __construct($forceDefault = FALSE)
+	private $createDefault = 0;
+
+	/**
+	 *
+	 */
+	public function __construct()
 	{
 		parent::__construct();
 
 		$this->monitor('Nette\Application\UI\Presenter');
-
-		$this->forceDefault = $forceDefault;
-	}
-
-	/**
-	 * @param string $name
-	 * @param callable $factory
-	 * @param string $containerClass
-	 *
-	 * @return $this
-	 */
-	public function addBlock($name, $factory, $containerClass = 'IPub\FormsBlocks\BlockContainer')
-	{
-		try {
-			$this->blocks[$name] = [
-				'factory' => Utils\Callback::closure($factory),
-				'containerClass' => $containerClass
-			];
-
-		} catch (Nette\InvalidArgumentException $e) {
-			$type = is_object($factory) ? 'instanceof ' . get_class($factory) : gettype($factory);
-
-			throw new Nette\InvalidArgumentException(
-				'Block requires callable factory, ' . $type . ' given.', 0, $e
-			);
-		}
-
-		return $this;
 	}
 
 	/**
@@ -113,6 +85,32 @@ class Container extends Nette\Forms\Container
 		}
 
 		$this->loadHttpData();
+	}
+
+	/**
+	 * @param string $name
+	 * @param callable $factory
+	 * @param string $containerClass
+	 *
+	 * @return $this
+	 */
+	public function addBlock($name, $factory, $containerClass = 'Nette\Forms\Container')
+	{
+		try {
+			$this->blocks[$name] = [
+				'factory' => Utils\Callback::closure($factory),
+				'containerClass' => $containerClass
+			];
+
+		} catch (Nette\InvalidArgumentException $e) {
+			$type = is_object($factory) ? 'instanceof ' . get_class($factory) : gettype($factory);
+
+			throw new Nette\InvalidArgumentException(
+				'Block requires callable factory, ' . $type . ' given.', 0, $e
+			);
+		}
+
+		return $this;
 	}
 
 	/**
@@ -205,7 +203,7 @@ class Container extends Nette\Forms\Container
 	 *
 	 * @return Forms\Container
 	 */
-	protected function createContainer($name, $containerClass = 'IPub\FormsBlocks\BlockContainer')
+	protected function createContainer($name, $containerClass = 'Nette\Forms\Container')
 	{
 		return new $containerClass();
 	}
@@ -514,8 +512,8 @@ class Container extends Nette\Forms\Container
 			});
 		}
 
-		Forms\Container::extensionMethod($methodName, function (Forms\Container $_this, $name, $forceDefault = FALSE) {
-			$control = new Container($forceDefault);
+		Forms\Container::extensionMethod($methodName, function (Forms\Container $_this, $name) {
+			$control = new Container;
 			$control->currentGroup = $_this->currentGroup;
 			return $_this[$name] = $control;
 		});
