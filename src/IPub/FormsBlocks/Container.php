@@ -143,9 +143,9 @@ class Container extends Nette\Forms\Container
 	protected function createComponent($name)
 	{
 		// Add block type select element
-		if ($name == 'blocks') {
+		if ($name == 'createBlock') {
 			if (!isset($this->components[$name])) {
-				$this->addSelect($name, 'blocks')
+				$this->addSelect($name, 'createBlock')
 					->setItems(array_reduce((is_array($this->blocks) ? array_keys($this->blocks) : []), function ($result, $row) {
 						$result[$row] = $row;
 
@@ -270,6 +270,26 @@ class Container extends Nette\Forms\Container
 		}
 
 		return parent::setValues($values, $erase, $onlyDisabled);
+	}
+
+	/**
+	 * @param bool $asArray
+	 *
+	 * @return array|Utils\ArrayHash
+	 */
+	public function getValues($asArray = FALSE)
+	{
+		$values = $asArray ? array() : new Utils\ArrayHash;
+
+		foreach ($this->containers as $name => $control) {
+			if ($control instanceof Forms\IControl && !$control->isOmitted()) {
+				$values[$name] = $control->getValue();
+
+			} elseif ($control instanceof Forms\Container) {
+				$values[$name] = $control->getValues($asArray);
+			}
+		}
+		return $values;
 	}
 
 	/**
@@ -546,7 +566,7 @@ class Container extends Nette\Forms\Container
 			$_this->onClick[] = function (Controls\SubmitButton $button) use ($allowEmpty, $callback) {
 				$blocks = $button->lookup(__NAMESPACE__ . '\Container');
 
-				$type = $blocks->getComponent('blocks')->getValue();
+				$type = $blocks->getComponent('createBlock')->getValue();
 
 				/** @var Container $blocks */
 				if (!is_bool($allowEmpty)) {
