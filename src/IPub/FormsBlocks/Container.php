@@ -185,12 +185,7 @@ class Container extends Nette\Forms\Container
 				$container->addHidden('blockType', $this->selectedBlock)
 					->setValue($this->selectedBlock);
 
-				try {
-					Utils\Callback::invoke($this->blocks[$this->selectedBlock]['factory'], $container);
-
-				} catch (\Exception $ex) {
-
-				}
+				Utils\Callback::invoke($this->blocks[$this->selectedBlock]['factory'], $container);
 
 				// Clear selected flag after using
 				$this->selectedBlock = NULL;
