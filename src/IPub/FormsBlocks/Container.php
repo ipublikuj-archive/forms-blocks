@@ -15,6 +15,7 @@
 namespace IPub\FormsBlocks;
 
 use Nette;
+use Nette\Application;
 use Nette\Forms;
 use Nette\Forms\Controls;
 use Nette\Utils;
@@ -23,6 +24,8 @@ use Nette\Utils;
  * @method \Nette\Application\UI\Form getForm()
  *
  * @property Forms\Container $parent
+ * @property-read \ArrayIterator $components
+ * @property-read \ArrayIterator $containers
  */
 class Container extends Nette\Forms\Container
 {
@@ -57,11 +60,6 @@ class Container extends Nette\Forms\Container
 	private $selectedBlock;
 
 	/**
-	 * @var int
-	 */
-	private $createDefault = 0;
-
-	/**
 	 *
 	 */
 	public function __construct()
@@ -80,7 +78,7 @@ class Container extends Nette\Forms\Container
 	{
 		parent::attached($obj);
 
-		if (!$obj instanceof Nette\Application\UI\Presenter) {
+		if (!$obj instanceof Application\UI\Presenter) {
 			return;
 		}
 
@@ -515,7 +513,7 @@ class Container extends Nette\Forms\Container
 	}
 
 	/**
-	 * @var bool
+	 * @var bool|string
 	 */
 	private static $registered = FALSE;
 
