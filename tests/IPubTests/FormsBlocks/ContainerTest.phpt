@@ -24,21 +24,25 @@ use Tester\Assert;
 
 use IPub;
 use IPub\FormsBlocks;
+use Tracy\Debugger;
 
 require_once __DIR__ . '/../bootstrap.php';
 
 class ContainerTest extends Tester\TestCase
 {
-	public function testReplicating()
+	public function testCreatingBlocks()
 	{
-		$blocks = new FormsBlocks\Container('blocks');
+		$blocks = new FormsBlocks\Container();
 
 		$blocks->addBlock('testBlock', function (Nette\Forms\Container $container) {
-			$container->addText('name', "Name");
+			$container->addText('name', 'Name');
 		});
 
+		$blocks->setActiveBlock('testBlock');
 		Assert::true($blocks[0]['name'] instanceof Forms\Controls\TextInput);
+		$blocks->setActiveBlock('testBlock');
 		Assert::true($blocks[2]['name'] instanceof Forms\Controls\TextInput);
+		$blocks->setActiveBlock('testBlock');
 		Assert::true($blocks[1000]['name'] instanceof Forms\Controls\TextInput);
 	}
 
@@ -50,24 +54,27 @@ class ContainerTest extends Tester\TestCase
 
 		$blocks->addBlock('testBlock', function (Nette\Forms\Container $block) {
 			$block->addText('name');
-		}, 1);
+		});
 
 		$blocks->addSubmit('add');
 
 		$this->connectForm($form);
 
 		// container and submit button
-		Assert::same(2, iterator_count($blocks->getComponents()));
+		Assert::same(1, iterator_count($blocks->getComponents()));
 
 		// simulate rendering additional key
+		$blocks->setActiveBlock('testBlock');
 		Assert::true($blocks[2]['name'] instanceof Forms\Controls\TextInput);
 
 		// 2 containers and submit button
-		Assert::same(3, iterator_count($blocks->getComponents()));
+		Assert::same(2, iterator_count($blocks->getComponents()));
 
 		Assert::same(['blocks' => [
-			0 => ['name' => ''],
-			2 => ['name' => ''],
+			2 => [
+				'blockType' => 'testBlock',
+				'name' => ''
+			],
 		]], $form->getValues(TRUE));
 	}
 
@@ -81,22 +88,25 @@ class ContainerTest extends Tester\TestCase
 
 		$blocks->addBlock('testBlock', function (Nette\Forms\Container $block) {
 			$block->addText('name');
-		}, 1);
+		});
 
 		$blocks->addSubmit('add');
 
 		// container and submit button
-		Assert::same(2, iterator_count($blocks->getComponents()));
+		Assert::same(1, iterator_count($blocks->getComponents()));
 
 		// simulate rendering additional key
+		$blocks->setActiveBlock('testBlock');
 		Assert::true($blocks[2]['name'] instanceof Forms\Controls\TextInput);
 
 		// 2 containers and submit button
-		Assert::same(3, iterator_count($blocks->getComponents()));
+		Assert::same(2, iterator_count($blocks->getComponents()));
 
 		Assert::same(['blocks' => [
-			0 => ['name' => ''],
-			2 => ['name' => ''],
+			2 => [
+				'blockType' => 'testBlock',
+				'name' => ''
+			],
 		]], $form->getValues(TRUE));
 	}
 
@@ -108,120 +118,110 @@ class ContainerTest extends Tester\TestCase
 
 		$blocks->addBlock('testBlock', function (Nette\Forms\Container $block) {
 			$block->addText('name');
-		}, 1);
+		});
 
 		$blocks->addSubmit('add');
 
-		$this->connectForm($form, array(
-			'blocks' => array(
-				0 => array('name' => 'Block one', 'blockType' => 'testBlock'),
-				2 => array('name' => 'Second block', 'blockType' => 'testBlock'),
-				3 => array('name' => 'And last block', 'blockType' => 'testBlock'),
-			),
+		$this->connectForm($form, [
+			'blocks' => [
+				0 => ['name' => 'Block one', 'blockType' => 'testBlock'],
+				2 => ['name' => 'Second block', 'blockType' => 'testBlock'],
+				3 => ['name' => 'And last block', 'blockType' => 'testBlock'],
+			],
 			'do' => 'form-submit'
-		));
+		]);
 
 		// container and submit button
 		Assert::same(4, iterator_count($blocks->getComponents()));
 
 		Assert::same(['blocks' => [
-			0 => ['name' => 'Block one'],
-			2 => ['name' => 'Second block'],
-			3 => ['name' => 'And last block'],
+			0 => [
+				'blockType' => 'testBlock',
+				'name' => 'Block one'
+			],
+			2 => [
+				'blockType' => 'testBlock',
+				'name' => 'Second block'
+			],
+			3 => [
+				'blockType' => 'testBlock',
+				'name' => 'And last block'
+			],
 		]], $form->getValues(TRUE));
 	}
 
-	public function testSubmit_attachBeforeDefinition()
+	public function testSubmit_Block_notFilled()
 	{
 		$form = new BaseForm();
-
-		$this->connectForm($form, [
-			'blocks' => [
-				0 => ['name' => 'Block one'],
-				2 => ['name' => 'Second block'],
-				3 => ['name' => 'And last block'],
-			],
-			'do' => 'form-submit'
-		]);
 
 		$blocks = $form->addBlocks('blocks');
 
 		$blocks->addBlock('testBlock', function (Nette\Forms\Container $block) {
 			$block->addText('name');
-		}, 1);
+		});
 
 		$blocks->addSubmit('add');
-
-		// container and submit button
-		Assert::same(4, iterator_count($blocks->getComponents()));
-
-		Assert::same(['blocks' => [
-			0 => ['name' => 'Block one'],
-			2 => ['name' => 'Second block'],
-			3 => ['name' => 'And last block'],
-		]], $form->getValues(TRUE));
-	}
-
-	public function testSubmit_nestedReplicator_notFilled()
-	{
-		$form = new BaseForm();
 
 		$this->connectForm($form, [
 			'blocks' => [
 				0 => [
-					'subBlocks' => [
-						0 => ['name' => '']
-					]
-				]
+					'blockType' => 'testBlock'
+				],
+				'createBlock' => 'testBlock'
 			],
-			'do' => 'form-submit',
+			'do' => 'form-submit'
 		]);
 
-		$blocks = $form->addBlocks('blocks');
-
-		$blocks->addBlock('testBlock', function (Nette\Forms\Container $block) {
-			$block->addBlocks('subBlocks');
-
-			$block->addBlock('subBlock', function (Nette\Forms\Container $subBlock) {
-				$subBlock->addText('name');
-				$subBlock->addText('note');
-			});
-		});
-
-		$blocks->addSubmit('add')->addCreateOnClick();
+		$blocks['add']->addCreateOnClick();
 
 		Assert::false($blocks->isAllFilled());
 	}
 
-	public function testSubmit_nestedReplicator_filled()
+	public function testSubmit_Block_filled()
 	{
 		$form = new BaseForm();
-
-		$this->connectForm($form, [
-			'blocks' => [
-				0 => [
-					'subBlocks' => [
-						0 => ['name' => 'foo']
-					]
-				]
-			],
-			'do' => 'form-submit',
-		]);
 
 		$blocks = $form->addBlocks('blocks');
 
 		$blocks->addBlock('testBlock', function (Nette\Forms\Container $block) {
-			$block->addBlocks('subBlocks');
-
-			$block->addBlock('subBlock', function (Nette\Forms\Container $subBlock) {
-				$subBlock->addText('name');
-				$subBlock->addText('note');
-			});
+			$block->addText('name');
 		});
 
-		$blocks->addSubmit('add')->addCreateOnClick();
+		$blocks->addSubmit('add');
+
+		$this->connectForm($form, [
+			'blocks' => [
+				0 => [
+					'blockType' => 'testBlock',
+					'name' => 'foo'
+				],
+				'createBlock' => 'testBlock'
+			],
+			'do' => 'form-submit'
+		]);
+
+		$blocks['add']->addCreateOnClick();
 
 		Assert::true($blocks->isAllFilled());
+	}
+
+	public function testMultipleBlocks()
+	{
+		$blocks = new FormsBlocks\Container();
+
+		$blocks->addBlock('testBlock', function (Nette\Forms\Container $container) {
+			$container->addText('name', 'Name');
+		});
+		$blocks->addBlock('otherBlock', function (Nette\Forms\Container $container) {
+			$container->addSelect('name', 'Name', [1 => 'item']);
+		});
+
+		$blocks->setActiveBlock('testBlock');
+		Assert::true($blocks[0]['name'] instanceof Forms\Controls\TextInput);
+		$blocks->setActiveBlock('otherBlock');
+		Assert::true($blocks[2]['name'] instanceof Forms\Controls\SelectBox);
+		$blocks->setActiveBlock('testBlock');
+		Assert::true($blocks[1000]['name'] instanceof Forms\Controls\TextInput);
 	}
 
 	/**

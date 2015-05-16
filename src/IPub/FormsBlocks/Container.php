@@ -112,6 +112,20 @@ class Container extends Nette\Forms\Container
 	}
 
 	/**
+	 * @param string $name
+	 *
+	 * @return $this
+	 */
+	public function setActiveBlock($name)
+	{
+		if (isset($this->blocks[$name]) && is_callable($this->blocks[$name]['factory'])) {
+			$this->selectedBlock = $name;
+		}
+
+		return $this;
+	}
+
+	/**
 	 * @param boolean $recursive
 	 *
 	 * @return \ArrayIterator|Forms\Container[]
@@ -171,7 +185,12 @@ class Container extends Nette\Forms\Container
 				$container->addHidden('blockType', $this->selectedBlock)
 					->setValue($this->selectedBlock);
 
-				Utils\Callback::invoke($this->blocks[$this->selectedBlock]['factory'], $container);
+				try {
+					Utils\Callback::invoke($this->blocks[$this->selectedBlock]['factory'], $container);
+
+				} catch (\Exception $ex) {
+
+				}
 
 				// Clear selected flag after using
 				$this->selectedBlock = NULL;
@@ -259,10 +278,12 @@ class Container extends Nette\Forms\Container
 	{
 		if (!$this->form->isAnchored() || !$this->form->isSubmitted()) {
 			foreach ($values as $name => $value) {
-				if ((is_array($value) || $value instanceof \Traversable) && !$this->getComponent($name, FALSE) && isset($value['blockType'])) {
+				if ((is_array($value) || $value instanceof \Traversable) && isset($value['blockType'])) {
 					$this->selectedBlock = $value['blockType'];
 
-					$this->createOne($name);
+					if (!$this->getComponent($name, FALSE)) {
+						$this->createOne($name);
+					}
 				}
 			}
 		}
@@ -277,7 +298,7 @@ class Container extends Nette\Forms\Container
 	 */
 	public function getValues($asArray = FALSE)
 	{
-		$values = $asArray ? array() : new Utils\ArrayHash;
+		$values = $asArray ? [] : new Utils\ArrayHash;
 
 		foreach ($this->containers as $name => $control) {
 			if ($control instanceof Forms\IControl && !$control->isOmitted()) {
@@ -302,10 +323,12 @@ class Container extends Nette\Forms\Container
 		}
 
 		foreach ((array) $this->getHttpData() as $name => $value) {
-			if ((is_array($value) || $value instanceof \Traversable) && !$this->getComponent($name, FALSE) && isset($value['blockType'])) {
+			if ((is_array($value) || $value instanceof \Traversable) && isset($value['blockType'])) {
 				$this->selectedBlock = $value['blockType'];
 
-				$this->createOne($name);
+				if (!$this->getComponent($name, FALSE)) {
+					$this->createOne($name);
+				}
 			}
 		}
 	}
@@ -444,13 +467,19 @@ class Container extends Nette\Forms\Container
 		$rows = [];
 		$subComponents = array_flip($subComponents);
 		foreach ($httpData as $item) {
-			$filter = function ($value) use (&$filter) {
-				if (is_array($value)) {
-					return count(array_filter($value, $filter)) > 0;
+			if (is_array($item)) {
+				if (array_key_exists('blockType', $item)) {
+					unset($item['blockType']);
 				}
-				return strlen($value);
-			};
-			$rows[] = array_filter(array_diff_key($item, $subComponents), $filter) ?: FALSE;
+
+				$filter = function ($value) use (&$filter) {
+					if (is_array($value)) {
+						return count(array_filter($value, $filter)) > 0;
+					}
+					return strlen($value);
+				};
+				$rows[] = array_filter(array_diff_key($item, $subComponents), $filter) ?: FALSE;
+			}
 		}
 
 		return count(array_filter($rows));
