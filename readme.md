@@ -5,7 +5,7 @@
 [![Latest Stable Version](https://img.shields.io/packagist/v/ipub/forms-blocks.svg?style=flat-square)](https://packagist.org/packages/ipub/forms-blocks)
 [![Composer Downloads](https://img.shields.io/packagist/dt/ipub/forms-blocks.svg?style=flat-square)](https://packagist.org/packages/ipub/forms-blocks)
 
-[Nette Framework](http://nette.org/) forms control for creating different replicated blocks.
+Forms control for creating different replicated form blocks for [Nette Framework](http://nette.org/)
 
 ## Installation
 

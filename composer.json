@@ -1,14 +1,15 @@
 {
 	"name"			: "ipub/forms-blocks",
 	"type"			: "library",
-	"description"	: "Nette forms control for creating different replicated blocks",
-	"keywords"		: ["nette", "forms", "blocks"],
-	"homepage"		: "https://github.com/iPublikuj/forms-blocks.git",
+	"description"	: "Forms control for creating different replicated form blocks for Nette Framework",
+	"keywords"		: ["nette", "forms", "blocks", "ipub", "ipublikuj", "tools", "dynamics forms"],
+	"homepage"		: "https://github.com/iPublikuj/forms-blocks",
 	"license"		: ["BSD-3-Clause", "GPL-2.0", "GPL-3.0"],
 
 	"authors": [
 		{
-			"name"		: "Adam Kadlec",
+			"name"		: "iPublikuj:cms",
+			"email"		: "info@ipublikuj.eu",
 			"homepage"	: "http://www.ipublikuj.eu/"
 		}
 	],
