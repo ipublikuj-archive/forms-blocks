@@ -172,7 +172,7 @@ class ContainerTest extends Tester\TestCase
 			'do' => 'form-submit'
 		]);
 
-		$blocks['add']->addCreateOnClick();
+		$blocks['add']->addCreateBlockOnClick();
 
 		Assert::false($blocks->isAllFilled());
 	}
@@ -200,7 +200,7 @@ class ContainerTest extends Tester\TestCase
 			'do' => 'form-submit'
 		]);
 
-		$blocks['add']->addCreateOnClick();
+		$blocks['add']->addCreateBlockOnClick();
 
 		Assert::true($blocks->isAllFilled());
 	}

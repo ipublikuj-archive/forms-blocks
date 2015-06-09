@@ -564,7 +564,7 @@ class Container extends Nette\Forms\Container
 			return;
 		}
 
-		Controls\SubmitButton::extensionMethod('addRemoveOnClick', function (Controls\SubmitButton $_this, $callback = NULL) {
+		Controls\SubmitButton::extensionMethod('addRemoveBlockOnClick', function (Controls\SubmitButton $_this, $callback = NULL) {
 			$_this->setValidationScope(FALSE);
 			$_this->onClick[] = function (Controls\SubmitButton $button) use ($callback) {
 				$blocks = $button->lookup(__NAMESPACE__ . '\Container');
@@ -584,7 +584,7 @@ class Container extends Nette\Forms\Container
 			return $_this;
 		});
 
-		Controls\SubmitButton::extensionMethod('addCreateOnClick', function (Controls\SubmitButton $_this, $allowEmpty = FALSE, $callback = NULL) {
+		Controls\SubmitButton::extensionMethod('addCreateBlockOnClick', function (Controls\SubmitButton $_this, $allowEmpty = FALSE, $callback = NULL) {
 			$_this->onClick[] = function (Controls\SubmitButton $button) use ($allowEmpty, $callback) {
 				$blocks = $button->lookup(__NAMESPACE__ . '\Container');
 
